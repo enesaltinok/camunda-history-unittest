@@ -18,9 +18,11 @@ import org.camunda.bpm.engine.impl.context.Context;
 import org.camunda.bpm.engine.impl.db.entitymanager.DbEntityManager;
 import org.camunda.bpm.engine.impl.history.HistoryLevel;
 import org.camunda.bpm.engine.impl.history.event.HistoricScopeInstanceEvent;
+import org.camunda.bpm.engine.impl.history.event.HistoricTaskInstanceEventEntity;
 import org.camunda.bpm.engine.impl.history.event.HistoricVariableUpdateEventEntity;
 import org.camunda.bpm.engine.impl.history.event.HistoryEvent;
 import org.camunda.bpm.engine.impl.history.event.HistoryEventTypes;
+import org.camunda.bpm.engine.impl.history.event.UserOperationLogEntryEventEntity;
 import org.camunda.bpm.engine.impl.history.handler.HistoryEventHandler;
 import org.camunda.bpm.engine.impl.persistence.entity.ByteArrayEntity;
 import org.camunda.bpm.engine.impl.persistence.entity.HistoricVariableInstanceEntity;
@@ -36,9 +38,33 @@ public class CustomDbHistoryEventHandler implements HistoryEventHandler {
 
   public void handleEvent(HistoryEvent historyEvent) {
 
-	System.out.println("Process instance id: " + historyEvent.getProcessInstanceId());
-	System.out.println("Event type: " + historyEvent.getEventType());
+	  //System.out.println("{");
+	if(historyEvent instanceof HistoricTaskInstanceEventEntity){
+		
+		/*System.out.println("A task event");
+		System.out.println("Activity instance id: " + ((HistoricTaskInstanceEventEntity)historyEvent).getActivityInstanceId());
+		System.out.println("Execution id: " + ((HistoricTaskInstanceEventEntity)historyEvent).getExecutionId());
+		System.out.println("Assigneee: " + ((HistoricTaskInstanceEventEntity)historyEvent).getAssignee());
+		System.out.println("Due date " + ((HistoricTaskInstanceEventEntity)historyEvent).getDueDate());
+		System.out.println("Follow up date: " + ((HistoricTaskInstanceEventEntity)historyEvent).getFollowUpDate());*/
+	}
+	else if(historyEvent instanceof UserOperationLogEntryEventEntity){
+		System.out.println("");
+		System.out.println("{");
+		System.out.println("Entity Type:" + ((UserOperationLogEntryEventEntity)historyEvent).getEntityType());
+		System.out.println("New Value:" + ((UserOperationLogEntryEventEntity)historyEvent).getNewValue());
+		System.out.println("Operation Id:" + ((UserOperationLogEntryEventEntity)historyEvent).getOperationId());
+		System.out.println("Operation Type:" + ((UserOperationLogEntryEventEntity)historyEvent).getOperationType());
+		System.out.println("Org Value:" + ((UserOperationLogEntryEventEntity)historyEvent).getOrgValue());
+		System.out.println("User Id:" + ((UserOperationLogEntryEventEntity)historyEvent).getUserId());
+		System.out.println("Property:" + ((UserOperationLogEntryEventEntity)historyEvent).getProperty());
+		System.out.println("}");
+	}
 	
+	//System.out.println("Process instance id: " + historyEvent.getProcessInstanceId());
+	/*System.out.println("Event type: " + historyEvent.getEventType());
+	System.out.println("History event class : " + historyEvent.getClass());*/
+	//System.out.println("}");
     if (historyEvent instanceof HistoricVariableUpdateEventEntity) {
       insertHistoricVariableUpdateEntity((HistoricVariableUpdateEventEntity) historyEvent);
     } else {
@@ -54,17 +80,19 @@ public class CustomDbHistoryEventHandler implements HistoryEventHandler {
 
   /** general history event insert behavior */
   protected void insertOrUpdate(HistoryEvent historyEvent) {
-	
     final DbEntityManager dbEntityManager = getDbEntityManager();
 
     String eventType = historyEvent.getEventType();
     if(eventType == null || isInitialEvent(eventType)) {
       dbEntityManager.insert(historyEvent);
     } else {
+    
       if(dbEntityManager.getCachedEntity(historyEvent.getClass(), historyEvent.getId()) == null) {
-        if (historyEvent instanceof HistoricScopeInstanceEvent) {
+    	  
+    	if (historyEvent instanceof HistoricScopeInstanceEvent) {
           // if this is a scope, get start time from existing event in DB
           HistoricScopeInstanceEvent existingEvent = (HistoricScopeInstanceEvent) dbEntityManager.selectById(historyEvent.getClass(), historyEvent.getId());
+          
           if(existingEvent != null) {
             HistoricScopeInstanceEvent historicScopeInstanceEvent = (HistoricScopeInstanceEvent) historyEvent;
             historicScopeInstanceEvent.setStartTime(existingEvent.getStartTime());

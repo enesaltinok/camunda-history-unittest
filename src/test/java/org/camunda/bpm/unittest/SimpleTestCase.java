@@ -12,7 +12,13 @@
  */
 package org.camunda.bpm.unittest;
 
+import org.camunda.bpm.engine.IdentityService;
+import org.camunda.bpm.engine.ManagementService;
+import org.camunda.bpm.engine.RepositoryService;
+import org.camunda.bpm.engine.RuntimeService;
+import org.camunda.bpm.engine.TaskService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
+import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.test.Deployment;
 import org.camunda.bpm.engine.test.ProcessEngineRule;
 
@@ -41,13 +47,17 @@ public class SimpleTestCase {
     // And it should be the only instance
     assertThat(processInstanceQuery().count()).isEqualTo(1);
     // And there should exist just a single task within that process instance
-    assertThat(task(processInstance)).isNotNull();
-    System.out.println("Assign");
-    claim(task(processInstance), "admin");
-    assertThat(task(processInstance)).isNotNull().hasDefinitionKey("UserTask_1").isAssignedTo("admin");
-    System.out.println("Assign successful");
+    Task task = task(processInstance);
+    assertThat(task).isNotNull();
+    
+    TaskService taskService = taskService();
+    taskService.addCandidateGroup(task.getId(), "manager");
+    
+    claim(task, "admin");
+    assertThat(task).isNotNull().hasDefinitionKey("UserTask_1").isAssignedTo("admin");
+    
     // When we complete that task
-    complete(task(processInstance));
+    complete(task);
     // Then the process instance should be ended
     assertThat(processInstance).isEnded();
   }
